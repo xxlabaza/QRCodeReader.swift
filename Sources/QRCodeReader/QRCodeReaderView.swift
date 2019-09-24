@@ -26,12 +26,14 @@
 
 import UIKit
 
+
 final public class QRCodeReaderView: UIView, QRCodeReaderDisplayable {
+
   public lazy var overlayView: QRCodeReaderViewOverlay? = {
     let ov = ReaderOverlayView()
 
-    ov.backgroundColor                           = .clear
-    ov.clipsToBounds                             = true
+    ov.backgroundColor = .clear
+    ov.clipsToBounds = true
     ov.translatesAutoresizingMaskIntoConstraints = false
 
     return ov
@@ -40,7 +42,7 @@ final public class QRCodeReaderView: UIView, QRCodeReaderDisplayable {
   public let cameraView: UIView = {
     let cv = UIView()
 
-    cv.clipsToBounds                             = true
+    cv.clipsToBounds = true
     cv.translatesAutoresizingMaskIntoConstraints = false
 
     return cv
@@ -73,43 +75,96 @@ final public class QRCodeReaderView: UIView, QRCodeReaderDisplayable {
 
   private weak var reader: QRCodeReader?
 
-  public func setupComponents(with builder: QRCodeReaderViewControllerBuilder) {
-    self.reader               = builder.reader
+  public func setupComponents (with builder: QRCodeReaderViewControllerBuilder) {
+    self.reader = builder.reader
     reader?.lifeCycleDelegate = self
 
     addComponents()
 
-    cancelButton?.isHidden       = !builder.showCancelButton
+    cancelButton?.isHidden = !builder.showCancelButton
     switchCameraButton?.isHidden = !builder.showSwitchCameraButton
-    toggleTorchButton?.isHidden  = !builder.showTorchButton
-    overlayView?.isHidden        = !builder.showOverlayView
+    toggleTorchButton?.isHidden = !builder.showTorchButton
+    overlayView?.isHidden = !builder.showOverlayView
 
-    guard let cb = cancelButton, let scb = switchCameraButton, let ttb = toggleTorchButton, let ov = overlayView else { return }
+    guard let cb = cancelButton,
+          let scb = switchCameraButton,
+          let ttb = toggleTorchButton,
+          let ov = overlayView
+    else {
+      return
+    }
 
     let views = ["cv": cameraView, "ov": ov, "cb": cb, "scb": scb, "ttb": ttb]
 
-    addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[cv]|", options: [], metrics: nil, views: views))
+    addConstraints(NSLayoutConstraint.constraints(
+      withVisualFormat: "H:|[cv]|",
+      options: [],
+      metrics: nil,
+      views: views
+    ))
 
     if builder.showCancelButton {
-      addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[cv][cb(40)]|", options: [], metrics: nil, views: views))
-      addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-[cb]-|", options: [], metrics: nil, views: views))
-    }
-    else {
-      addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[cv]|", options: [], metrics: nil, views: views))
+      addConstraints(NSLayoutConstraint.constraints(
+        withVisualFormat: "V:|[cv][cb(40)]|",
+        options: [],
+        metrics: nil,
+        views: views
+      ))
+      addConstraints(NSLayoutConstraint.constraints(
+        withVisualFormat: "H:|-[cb]-|",
+        options: [],
+        metrics: nil,
+        views: views
+      ))
+    } else {
+      addConstraints(NSLayoutConstraint.constraints(
+        withVisualFormat: "V:|[cv]|",
+        options: [],
+        metrics: nil,
+        views: views
+      ))
     }
 
     if builder.showSwitchCameraButton {
-      addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-[scb(50)]", options: [], metrics: nil, views: views))
-      addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:[scb(70)]|", options: [], metrics: nil, views: views))
+      addConstraints(NSLayoutConstraint.constraints(
+        withVisualFormat: "V:|-[scb(50)]",
+        options: [],
+        metrics: nil,
+        views: views
+      ))
+      addConstraints(NSLayoutConstraint.constraints(
+        withVisualFormat: "H:[scb(70)]|",
+        options: [],
+        metrics: nil,
+        views: views
+      ))
     }
 
     if builder.showTorchButton {
-      addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-[ttb(50)]", options: [], metrics: nil, views: views))
-      addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[ttb(70)]", options: [], metrics: nil, views: views))
+      addConstraints(NSLayoutConstraint.constraints(
+        withVisualFormat: "V:|-[ttb(50)]",
+        options: [],
+        metrics: nil,
+        views: views
+      ))
+      addConstraints(NSLayoutConstraint.constraints(
+        withVisualFormat: "H:|[ttb(70)]",
+        options: [],
+        metrics: nil,
+        views: views
+      ))
     }
 
     for attribute in Array<NSLayoutConstraint.Attribute>([.left, .top, .right, .bottom]) {
-      addConstraint(NSLayoutConstraint(item: ov, attribute: attribute, relatedBy: .equal, toItem: cameraView, attribute: attribute, multiplier: 1, constant: 0))
+      addConstraint(NSLayoutConstraint(
+        item: ov,
+        attribute: attribute,
+        relatedBy: .equal,
+        toItem: cameraView,
+        attribute: attribute,
+        multiplier: 1,
+        constant: 0
+      ))
     }
 
     if let readerOverlayView = overlayView as? ReaderOverlayView {
@@ -117,56 +172,65 @@ final public class QRCodeReaderView: UIView, QRCodeReaderDisplayable {
     }
   }
 
-  public override func layoutSubviews() {
+  public override func layoutSubviews () {
     super.layoutSubviews()
 
     reader?.previewLayer.frame = bounds
   }
 
   // MARK: - Scan Result Indication
-
-  func startTimerForBorderReset() {
+  func startTimerForBorderReset () {
     DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
       self.overlayView?.setState(.normal)
     }
   }
 
-  func addRedBorder() {
+  func addRedBorder () {
     self.startTimerForBorderReset()
 
     self.overlayView?.setState(.wrong)
   }
 
-  func addGreenBorder() {
+  func addGreenBorder () {
     self.startTimerForBorderReset()
-    
+
     self.overlayView?.setState(.valid)
   }
 
-  @objc public func setNeedsUpdateOrientation() {
+  @objc public func setNeedsUpdateOrientation () {
     setNeedsDisplay()
 
     overlayView?.setNeedsDisplay()
 
-    if let connection = reader?.previewLayer.connection, connection.isVideoOrientationSupported {
-      let application                    = UIApplication.shared
-      let orientation                    = UIDevice.current.orientation
+    if let connection = reader?.previewLayer.connection,
+       connection.isVideoOrientationSupported
+    {
+      let application = UIApplication.shared
+      let orientation = UIDevice.current.orientation
       let supportedInterfaceOrientations = application.supportedInterfaceOrientations(for: application.keyWindow)
 
-      connection.videoOrientation = QRCodeReader.videoOrientation(deviceOrientation: orientation, withSupportedOrientations: supportedInterfaceOrientations, fallbackOrientation: connection.videoOrientation)
+      connection.videoOrientation = QRCodeReader.videoOrientation(
+        deviceOrientation: orientation,
+        withSupportedOrientations: supportedInterfaceOrientations,
+        fallbackOrientation: connection.videoOrientation
+      )
     }
   }
 
   // MARK: - Convenience Methods
-
-  private func addComponents() {
+  private func addComponents () {
     #if swift(>=4.2)
     let notificationName = UIDevice.orientationDidChangeNotification
     #else
     let notificationName = NSNotification.Name.UIDeviceOrientationDidChange
     #endif
 
-    NotificationCenter.default.addObserver(self, selector: #selector(self.setNeedsUpdateOrientation), name: notificationName, object: nil)
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(self.setNeedsUpdateOrientation),
+      name: notificationName,
+      object: nil
+    )
 
     addSubview(cameraView)
 
@@ -181,23 +245,24 @@ final public class QRCodeReaderView: UIView, QRCodeReaderDisplayable {
     if let ttb = toggleTorchButton {
       addSubview(ttb)
     }
-    
+
     if let cb = cancelButton {
       addSubview(cb)
     }
 
     if let reader = reader {
       cameraView.layer.insertSublayer(reader.previewLayer, at: 0)
-      
       setNeedsUpdateOrientation()
     }
   }
 }
 
+
 extension QRCodeReaderView: QRCodeReaderLifeCycleDelegate {
-  func readerDidStartScanning() {
+
+  func readerDidStartScanning () {
     setNeedsUpdateOrientation()
   }
 
-  func readerDidStopScanning() {}
+  func readerDidStopScanning () {}
 }
