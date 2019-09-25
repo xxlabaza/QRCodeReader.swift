@@ -47,21 +47,24 @@ public final class QRCodeReader: NSObject, AVCaptureMetadataOutputObjectsDelegat
 
   let defaultDevice: AVCaptureDevice? = AVCaptureDevice.default(for: .video)
   let frontDevice: AVCaptureDevice? = {
-    if #available(iOS 10, *) {
-      return AVCaptureDevice.default(
-        .builtInWideAngleCamera,
-        for: AVMediaType.video,
-        position: .front
-      )
+    guard #available(iOS 10, *) else {
+      return nil
+    }
+
+    var types: [AVCaptureDevice.DeviceType] = [
+      .builtInWideAngleCamera,
+      .builtInTelephotoCamera
+    ]
+
+    if #available(iOS 10.2, *) {
+      types.append(.builtInDualCamera)
+    }
+    if #available(iOS 11.1, *) {
+      types.append(.builtInTrueDepthCamera)
     }
 
     return AVCaptureDevice.DiscoverySession(
-      deviceTypes: [
-        .builtInTrueDepthCamera,
-        .builtInDualCamera,
-        .builtInWideAngleCamera,
-        .builtInTelephotoCamera
-      ],
+      deviceTypes: types,
       mediaType: .video,
       position: .front
     ).devices.first
